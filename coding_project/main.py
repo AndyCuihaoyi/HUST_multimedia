@@ -10,13 +10,13 @@ mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei']
 mpl.rcParams['axes.unicode_minus'] = False
 VIDEO_PATH = "godfather_clip.mp4"
 FRAME_DIR = "frames_output"
-FPS = 5  # 与解析视频时的帧率一致
-THRESHOLD = 0.8  # 直方图差值阈值（可根据实际数据调整）
+FPS = 5
+THRESHOLD = 0.24
+SMOOTH_WINDOW = 3
 
 
 def extract_frames():
     os.makedirs(FRAME_DIR, exist_ok=True)
-    # 构造FFmpeg命令（补全可执行文件路径）
     ffmpeg_cmd = [
         "ffmpeg",
         "-i", VIDEO_PATH,
@@ -42,24 +42,20 @@ def extract_frames():
 
 def show_frame(frame_name, title):
     frame_path = os.path.join(FRAME_DIR, frame_name)
-    # 读取并转换为RGB格式（避免Matplotlib显示异常）
     img = Image.open(frame_path).convert('RGB')
     img_array = np.array(img)
-    pixel_mean = np.mean(img_array)  # 计算像素均值（仅展示，不做黑帧判断）
+    pixel_mean = np.mean(img_array)
 
-    # 配置中文字体
     plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
     plt.rcParams['axes.unicode_minus'] = False
 
-    # 绘制帧画面
     plt.figure(figsize=(8, 6))
     plt.imshow(img_array)
     plt.title(f"{title}（像素均值：{pixel_mean:.2f}）", fontsize=12)
-    plt.axis("off")  # 隐藏坐标轴
-    plt.tight_layout()  # 优化布局
+    plt.axis("off")
+    plt.tight_layout()
     plt.show()
 
-    # 打印帧信息
     print(f"【{title}】")
     print(f"  文件名称：{frame_name}")
     print(f"  文件路径：{frame_path}")
@@ -67,130 +63,223 @@ def show_frame(frame_name, title):
 
 
 def print_and_show_extract_result():
-    """提取完成后打印统计信息，展示首/中/尾帧"""
-    # 获取所有帧文件并按编号排序
     frame_files = sorted([
         f for f in os.listdir(FRAME_DIR)
         if f.startswith("frame_") and f.endswith(".jpg")
     ])
 
-    # 校验帧文件数量
     if not frame_files:
         print("=== 提取结果异常 ===")
         print("未检测到任何提取的帧文件！")
         return
 
-    # 计算基础统计信息
     total_frames = len(frame_files)
-    video_duration = total_frames / FPS  # 估算视频时长
+    video_duration = total_frames / FPS
 
-    # 打印提取结果统计
     print("=== 帧提取结果统计 ===")
     print(f"总提取帧数：{total_frames} 帧")
     print(f"提取帧率：{FPS} fps")
     print(f"估算视频时长：{video_duration:.2f} 秒")
     print(f"帧文件范围：{frame_files[0]} ~ {frame_files[-1]}\n")
 
-    # 选择首帧、中间帧、末尾帧
     first_frame = frame_files[0]
     middle_frame = frame_files[total_frames // 2]
     last_frame = frame_files[-1]
 
-    # 展示关键帧
     print("=== 展示关键帧 ===")
     show_frame(first_frame, "首帧")
     show_frame(middle_frame, "中间帧")
     show_frame(last_frame, "末尾帧")
 
+
+# ===================== 核心改进1：增强直方图特征 =====================
 def calc_frame_hist(frame_path):
+    """
+    改进点：
+    1. 增加图像降采样，减少计算量同时降低噪声
+    2. 分离亮度/色度通道，分别计算直方图后融合
+    3. 增加梯度直方图补充纹理特征
+    """
     frame = cv2.imread(frame_path)
-    # 增加容错：处理图片读取失败的情况
     if frame is None:
         print(f"警告：无法读取帧文件 {frame_path}，返回空直方图")
-        return np.zeros((18*8*8,))  # 返回与原直方图维度一致的空数组
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    hist = cv2.calcHist(
-        [hsv], [0, 1, 2], None, [18, 8, 8],
-        [0, 180, 0, 256, 0, 256]
-    )
-    hist = cv2.normalize(hist, hist).flatten()
+        return np.zeros((18 * 8 * 8 + 16,))  # 预留梯度特征维度
+
+    # 1. 降采样（缩小到320x240），降低噪声和计算量
+    frame = cv2.resize(frame, (320, 240))
+    # 2. 转换为YCbCr（视频标准空间，亮度/色度分离）
+    ycbcr = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
+    y, cr, cb = cv2.split(ycbcr)
+
+    # 3. 分别计算亮度和色度直方图
+    # 亮度直方图（Y通道，分32箱，更敏感）
+    hist_y = cv2.calcHist([y], [0], None, [32], [0, 256])
+    # 色度直方图（Cr/Cb通道，各16箱）
+    hist_cr = cv2.calcHist([cr], [0], None, [16], [0, 256])
+    hist_cb = cv2.calcHist([cb], [0], None, [16], [0, 256])
+
+    # 4. 计算梯度直方图（补充纹理特征）
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    grad_mag = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+    hist_grad = cv2.calcHist([grad_mag.astype(np.uint8)], [0], None, [16], [0, 256])
+
+    # 5. 归一化并融合所有特征
+    hist_y = cv2.normalize(hist_y, hist_y).flatten()
+    hist_cr = cv2.normalize(hist_cr, hist_cr).flatten()
+    hist_cb = cv2.normalize(hist_cb, hist_cb).flatten()
+    hist_grad = cv2.normalize(hist_grad, hist_grad).flatten()
+
+    # 融合（亮度权重0.4，色度各0.2，梯度0.2）
+    hist = np.concatenate([
+        hist_y * 0.4,
+        hist_cr * 0.2,
+        hist_cb * 0.2,
+        hist_grad * 0.2
+    ])
     return hist
 
+
+# ===================== 核心改进2：优化差值计算 =====================
 def calc_hist_diff():
-    # 获取排序后的帧文件
+    """
+    改进点：
+    1. 使用巴氏距离（Bhattacharyya）替代卡方距离，对细微差异更敏感
+    2. 差值归一化到[0,1]，统一阈值参考
+    3. 滑动窗口平滑，过滤单帧噪声
+    4. 计算帧间差值的相对变化率，增强边界识别
+    """
     frame_files = sorted(
-        [f for f in os.listdir(FRAME_DIR) if f.startswith("frame_") and f.endswith(".jpg")])  # 增加后缀过滤，避免非jpg文件干扰
+        [f for f in os.listdir(FRAME_DIR) if f.startswith("frame_") and f.endswith(".jpg")])
     if len(frame_files) < 2:
         print("帧数量不足，无法计算差值！")
         exit(1)
 
-    hist_diff = []
-    frame_times = []  # 帧对应的视频时间（秒）
-    # 计算相邻帧差值（卡方距离）
-    for i in range(1, len(frame_files)):
-        hist_prev = calc_frame_hist(os.path.join(FRAME_DIR, frame_files[i - 1]))
-        hist_curr = calc_frame_hist(os.path.join(FRAME_DIR, frame_files[i]))
-        # 卡方距离：越大表示帧差异越大
-        diff = cv2.compareHist(hist_prev, hist_curr, cv2.HISTCMP_CHISQR)
-        hist_diff.append(diff)
-        # 修复：帧时间取「后一帧的时间」，且确保帧编号解析正确
-        frame_name = frame_files[i]
+    hist_list = []  # 预存所有帧的直方图，避免重复计算
+    frame_times = []
+    frame_indices = []
+
+    # 第一步：预计算所有帧的直方图
+    for frame_name in frame_files:
+        hist = calc_frame_hist(os.path.join(FRAME_DIR, frame_name))
+        hist_list.append(hist)
         try:
-            # 提取帧编号（如frame_0005.jpg → 5）
             frame_idx = int(frame_name.split("_")[1].split(".")[0])
-            frame_time = frame_idx / FPS  # 第N帧对应的视频时间 = 帧编号 / 帧率
-            frame_times.append(frame_time)
+            frame_times.append(frame_idx / FPS)
+            frame_indices.append(frame_idx)
         except (IndexError, ValueError):
             print(f"警告：帧文件命名异常 {frame_name}，跳过时间计算")
-            frame_times.append(i / FPS)  # 兜底：用循环索引估算时间
+            frame_times.append(len(frame_times) / FPS)
+            frame_indices.append(len(frame_indices) + 1)
 
-    return hist_diff, frame_times, frame_files
+    # 第二步：计算帧间巴氏距离（对细微差异更敏感）
+    hist_diff = []
+    for i in range(1, len(hist_list)):
+        # 巴氏距离（范围[0,1]，值越大差异越大）
+        diff = cv2.compareHist(hist_list[i - 1], hist_list[i], cv2.HISTCMP_BHATTACHARYYA)
+        hist_diff.append(diff)
+
+    # 第三步：归一化差值到[0,1]
+    hist_diff = np.array(hist_diff)
+    if np.max(hist_diff) > 0:
+        hist_diff = (hist_diff - np.min(hist_diff)) / (np.max(hist_diff) - np.min(hist_diff))
+
+    # 第四步：滑动窗口平滑，过滤单帧噪声
+    if len(hist_diff) >= SMOOTH_WINDOW:
+        kernel = np.ones(SMOOTH_WINDOW) / SMOOTH_WINDOW
+        hist_diff = np.convolve(hist_diff, kernel, mode='same')
+
+    # 第五步：计算相对变化率（增强边界突变）
+    diff_deriv = np.gradient(hist_diff)  # 差值的一阶导数（变化率）
+    # 融合原始差值和变化率（权重各0.5）
+    hist_diff = hist_diff * 0.5 + np.abs(diff_deriv) * 0.5
+
+    return hist_diff, frame_times, frame_files, frame_indices
 
 
-def detect_shot_boundary(hist_diff, frame_times, frame_files):
-    # 1. 绘制直方图差值柱状图
+def split_shots_by_frames(hist_diff, frame_files, frame_indices, threshold):
+    shots = []
+    shot_id = 1
+    start_frame_idx = int(frame_files[0].split("_")[1].split(".")[0])
+
+    for i, diff in enumerate(hist_diff):
+        if diff > threshold:
+            end_frame_idx = frame_indices[i] - 1
+            start_time = start_frame_idx / FPS
+            end_time = end_frame_idx / FPS
+
+            shots.append({
+                "镜头ID": shot_id,
+                "帧范围": [start_frame_idx, end_frame_idx],
+                "时间范围": [round(start_time, 1), round(end_time, 1)],
+                "帧文件范围": f"{frame_files[start_frame_idx - 1]} ~ {frame_files[end_frame_idx - 1]}"
+            })
+
+            start_frame_idx = frame_indices[i]
+            shot_id += 1
+
+    last_frame_idx = int(frame_files[-1].split("_")[1].split(".")[0])
+    start_time = start_frame_idx / FPS
+    end_time = last_frame_idx / FPS
+    shots.append({
+        "镜头ID": shot_id,
+        "帧范围": [start_frame_idx, last_frame_idx],
+        "时间范围": [round(start_time, 1), round(end_time, 1)],
+        "帧文件范围": f"{frame_files[start_frame_idx - 1]} ~ {frame_files[-1]}"
+    })
+
+    return shots
+
+
+def print_shot_result(shots):
+    print("\n" + "=" * 60)
+    print("📸 镜头切分结果（按帧/时间范围区分）")
+    print("=" * 60)
+    for shot in shots:
+        print(
+            f"{shot['镜头ID']}号镜头：第{shot['帧范围'][0]}-{shot['帧范围'][1]}帧（对应视频{shot['时间范围'][0]}-{shot['时间范围'][1]}秒）")
+        print(f"  对应帧文件：{shot['帧文件范围']}")
+
+
+def detect_shot_boundary(hist_diff, frame_times, frame_files, frame_indices):
     plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
     plt.rcParams['axes.unicode_minus'] = False
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # 修复1：x轴长度与hist_diff严格匹配（相邻帧对数量 = 总帧数-1）
     x = np.arange(len(hist_diff))
-    ax.bar(x, hist_diff, color='skyblue', label='帧间直方图差值')
-
-    # 绘制阈值线
+    ax.bar(x, hist_diff, color='skyblue', label='增强型帧间差值（归一化+平滑）')
     ax.axhline(y=THRESHOLD, color='red', linestyle='--', label=f'阈值 = {THRESHOLD}')
 
-    # 修复2：x轴标签改为「帧对（前帧→后帧）」，避免时间标注越界
     ax.set_xlabel('相邻帧对（如 1→2 表示第1帧与第2帧的差值）')
-    ax.set_ylabel('直方图卡方差值')
-    ax.set_title('视频帧间直方图差值分布')
+    ax.set_ylabel('归一化差值（越大差异越明显）')
+    ax.set_title('视频帧间增强型差值分布（优化后）')
     ax.legend()
 
-    # 修复3：合理设置刻度标注（按步长标注，且不超过数组长度）
-    step = max(1, len(hist_diff) // 10)  # 最多显示10个刻度，避免拥挤
+    step = max(1, len(hist_diff) // 10)
     xticks_pos = x[::step]
-    xticks_labels = [f"{i + 1}→{i + 2}\n({frame_times[i]:.1f}s)" for i in xticks_pos]  # 标注帧对+时间
+    xticks_labels = [f"{i + 1}→{i + 2}\n({frame_times[i]:.1f}s)" for i in xticks_pos]
     ax.set_xticks(xticks_pos)
     ax.set_xticklabels(xticks_labels, rotation=0)
 
     plt.tight_layout()
-    plt.savefig("hist_diff_bar.png")
+    hist_img_path = os.path.join(FRAME_DIR, "hist_diff_bar_optimized.png")
+    plt.savefig(hist_img_path)
+    print(f"优化后差值柱状图已保存至：{hist_img_path}")
     plt.show()
 
-    # 2. 检测镜头边界（差值超过阈值的位置）
     shot_boundaries = []
     for i, diff in enumerate(hist_diff):
         if diff > THRESHOLD:
             boundary_time = frame_times[i]
-            boundary_frame_pair = f"{i + 1}→{i + 2}"  # 明确是哪一对帧的边界
+            boundary_frame_pair = f"{i + 1}→{i + 2}"
             shot_boundaries.append({
                 "帧对": boundary_frame_pair,
                 "视频时间（秒）": round(boundary_time, 1),
                 "差值": round(diff, 3)
             })
 
-    # 输出检测结果（优化展示）
-    print("\n检测到的镜头边界：")
+    print("\n检测到的镜头边界（优化后）：")
     if not shot_boundaries:
         print("未检测到超过阈值的镜头边界！")
     else:
@@ -200,15 +289,13 @@ def detect_shot_boundary(hist_diff, frame_times, frame_files):
     return shot_boundaries
 
 
-# ===================== 6. 主函数 =====================
+# ===================== 主函数 =====================
 if __name__ == "__main__":
-
-    # 执行帧提取
     extract_success = extract_frames()
-    # 打印并展示提取结果
     if extract_success:
         print_and_show_extract_result()
 
-    hist_diff, frame_times, frame_files = calc_hist_diff()
-
-    shot_boundaries = detect_shot_boundary(hist_diff, frame_times, frame_files)
+    hist_diff, frame_times, frame_files, frame_indices = calc_hist_diff()
+    shot_boundaries = detect_shot_boundary(hist_diff, frame_times, frame_files, frame_indices)
+    shots = split_shots_by_frames(hist_diff, frame_files, frame_indices, THRESHOLD)
+    print_shot_result(shots)
