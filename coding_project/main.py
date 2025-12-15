@@ -44,8 +44,6 @@ ZIGZAG_ORDER = [
     53, 60, 61, 54, 47, 55, 62, 63
 ]
 
-
-# ===================== 原有镜头切分函数（完整保留） =====================
 def extract_frames():
     os.makedirs(FRAME_DIR, exist_ok=True)
     ffmpeg_cmd = [
@@ -355,7 +353,7 @@ def detect_shot_boundary(hist_diff, frame_times, frame_files, frame_indices, sho
     return shot_boundaries
 
 
-# ===================== 新增函数1：I帧JPEG压缩 =====================
+
 def jpeg_compress_i_frame(frame_path, frame_name="I帧"):
     """
     对单张I帧图像执行JPEG压缩（简化版）
@@ -446,8 +444,6 @@ def jpeg_compress_i_frame(frame_path, frame_name="I帧"):
         "compression_ratio": compression_ratio
     }
 
-
-# ===================== 新增函数2：P帧压缩 =====================
 def mpeg_compress_p_frame(i_frame_path, p_frame_path):
     """
     P帧压缩（基于参考I帧的块匹配）
@@ -572,7 +568,6 @@ def mpeg_compress_p_frame(i_frame_path, p_frame_path):
     }
 
 
-# ===================== 主函数（整合所有逻辑） =====================
 if __name__ == "__main__":
     # 1. 提取帧 + 镜头切分
     extract_success = extract_frames()

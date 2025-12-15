@@ -10,6 +10,36 @@
 \contentsline {subsection}{\numberline {1.3}总结}{7}{subsection.1.3}%
 \contentsline {section}{\numberline {2}视频相关编程实验}{9}{section.2}%
 \contentsline {subsection}{\numberline {2.1}ffmpeg视频帧分割}{9}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}镜头和场景分割}{9}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}MPEG视频压缩编码}{9}{subsection.2.3}%
-\contentsline {section}{附录}{10}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.1.1}实验要求}{9}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}具体实现}{9}{subsubsection.2.1.2}%
+\contentsline {paragraph}{功能说明}{9}{subsubsection.2.1.2}%
+\contentsline {subsubsection}{\numberline {2.1.3}结果分析}{11}{subsubsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.2}镜头和场景分割}{12}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}实验要求}{12}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}具体实现}{12}{subsubsection.2.2.2}%
+\contentsline {paragraph}{1. 单帧特征直方图计算（calc\_frame\_hist）}{12}{subsubsection.2.2.2}%
+\contentsline {paragraph}{2. 帧间直方图差值计算}{13}{lstnumber.2.33}%
+\contentsline {paragraph}{3. 镜头分割与短镜头合并（split\_shots\_by\_frames）}{15}{lstnumber.3.38}%
+\contentsline {subsubsection}{\numberline {2.2.3}结果分析与改进策略}{18}{subsubsection.2.2.3}%
+\contentsline {paragraph}{1. 分布图核心信息解释}{18}{figure.caption.4}%
+\contentsline {paragraph}{2. 镜头边界识别分析}{18}{figure.caption.4}%
+\contentsline {paragraph}{3. 分割结果的合理性验证}{19}{figure.caption.4}%
+\contentsline {paragraph}{4. 分割结果}{19}{Item.16}%
+\contentsline {paragraph}{5. 进一步改进策略}{19}{figure.caption.5}%
+\contentsline {subparagraph}{特征融合的帧间差值计算}{20}{figure.caption.5}%
+\contentsline {subparagraph}{自适应动态阈值调整机制}{20}{figure.caption.5}%
+\contentsline {subparagraph}{上下文感知的边界验证}{20}{figure.caption.5}%
+\contentsline {subsubsection}{\numberline {2.2.4}结果总结}{20}{subsubsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.3}MPEG 压缩实验}{21}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}实验要求}{21}{subsubsection.2.3.1}%
+\contentsline {paragraph}{编程一：I 帧的 JPEG 压缩实现}{21}{subsubsection.2.3.1}%
+\contentsline {paragraph}{编程二：P 帧的预测编码压缩实现}{21}{Item.22}%
+\contentsline {subsubsection}{\numberline {2.3.2}具体实现}{22}{subsubsection.2.3.2}%
+\contentsline {paragraph}{I帧JPEG压缩}{22}{subsubsection.2.3.2}%
+\contentsline {subparagraph}{算法简介}{22}{subsubsection.2.3.2}%
+\contentsline {subparagraph}{代码逻辑描述}{22}{subsubsection.2.3.2}%
+\contentsline {paragraph}{P帧的压缩算法}{23}{lstnumber.5.30}%
+\contentsline {subparagraph}{算法简介}{23}{lstnumber.5.30}%
+\contentsline {subparagraph}{代码逻辑描述}{24}{lstnumber.5.30}%
+\contentsline {subsubsection}{\numberline {2.3.3}结果分析}{26}{subsubsection.2.3.3}%
+\contentsline {section}{附录}{27}{subsubsection.2.3.3}%
