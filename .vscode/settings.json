@@ -1,0 +1,104 @@
+{
+    
+    "workbench.colorTheme": "Default Dark+",
+    "security.workspace.trust.untrustedFiles": "open",
+    "workbench.preferredHighContrastColorTheme": "Visual Studio Dark",
+    "workbench.preferredHighContrastLightColorTheme": "Default High Contrast",
+    "workbench.preferredLightColorTheme": "Default High Contrast",
+    "json.schemas": [],
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.showContextMenu": true,
+    "latex-workshop.intellisense.package.enabled": true,
+    "latex-workshop.message.error.show": false,
+    "latex-workshop.message.warning.show": false,
+    "latex-workshop.latex.tools": [
+        {
+            "name": "xelatex",
+            "command": "xelatex",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOCFILE%"
+            ]
+        },
+        {
+            "name": "pdflatex",
+            "command": "pdflatex",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOCFILE%"
+            ]
+        },
+        {
+            "name": "latexmk",
+            "command": "latexmk",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-pdf",
+                "-outdir=%OUTDIR%",
+                "%DOCFILE%"
+            ]
+        },
+        {
+            "name": "biber",               // ← 新增 Biber 工具
+            "command": "biber",
+            "args": ["%DOCFILE%"]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "XeLaTeX",
+            "tools": ["xelatex"]
+        },
+        {
+            "name": "PDFLaTeX",
+            "tools": ["pdflatex"]
+        },
+        {
+            "name": "LaTeXmk",
+            "tools": ["latexmk"]
+        },
+        {
+            "name": "xelatex -> biber -> xelatex*2",   // ← 改用 Biber
+            "tools": [
+                "xelatex",
+                "biber",
+                "xelatex",
+                "xelatex"
+            ]
+        },
+        {
+            "name": "pdflatex -> biber -> pdflatex*2", // ← 改用 Biber
+            "tools": [
+                "pdflatex",
+                "biber",
+                "pdflatex",
+                "pdflatex"
+            ]
+        }
+    ],
+    "latex-workshop.latex.clean.fileTypes": [
+        "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.lof", "*.lot",
+        "*.out", "*.toc", "*.acn", "*.acr", "*.alg", "*.glg", "*.glo",
+        "*.gls", "*.ist", "*.fls", "*.log", "*.fdb_latexmk"
+    ],
+    "latex-workshop.latex.autoClean.run": "onFailed",
+    "latex-workshop.latex.recipe.default": "lastUsed",
+    "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
+    "editor.wordWrap": "on",
+    "python.condaPath": "D:\\software\\conda_mamba\\_conda.exe",
+    "python.defaultInterpreterPath": "D:\\software\\conda_mamba\\envs\\airs\\python.exe",
+    "window.zoomLevel": 1,
+    "tabby.api.endpoint": "http://10.70.8.175:8080",
+    "http.proxy": "http://10.70.8.175:8080",
+    "[python]": {
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.formatOnType": true,
+        "editor.wordBasedSuggestions": "off"
+    }
+}
