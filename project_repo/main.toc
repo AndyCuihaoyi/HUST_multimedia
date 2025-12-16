@@ -21,14 +21,14 @@
 \contentsline {paragraph}{2. 帧间直方图差值计算}{13}{lstnumber.2.33}%
 \contentsline {paragraph}{3. 镜头分割与短镜头合并（split\_shots\_by\_frames）}{15}{lstnumber.3.38}%
 \contentsline {subsubsection}{\numberline {2.2.3}结果分析与改进策略}{18}{subsubsection.2.2.3}%
-\contentsline {paragraph}{1. 分布图核心信息解释}{18}{figure.caption.4}%
-\contentsline {paragraph}{2. 镜头边界识别分析}{18}{figure.caption.4}%
-\contentsline {paragraph}{3. 分割结果的合理性验证}{19}{figure.caption.4}%
+\contentsline {paragraph}{1. 分布图核心信息解释}{18}{figure.caption.5}%
+\contentsline {paragraph}{2. 镜头边界识别分析}{18}{figure.caption.5}%
+\contentsline {paragraph}{3. 分割结果的合理性验证}{19}{figure.caption.5}%
 \contentsline {paragraph}{4. 分割结果}{19}{Item.16}%
-\contentsline {paragraph}{5. 进一步改进策略}{19}{figure.caption.5}%
-\contentsline {subparagraph}{特征融合的帧间差值计算}{20}{figure.caption.5}%
-\contentsline {subparagraph}{自适应动态阈值调整机制}{20}{figure.caption.5}%
-\contentsline {subparagraph}{上下文感知的边界验证}{20}{figure.caption.5}%
+\contentsline {paragraph}{5. 进一步改进策略}{19}{figure.caption.6}%
+\contentsline {subparagraph}{特征融合的帧间差值计算}{20}{figure.caption.6}%
+\contentsline {subparagraph}{自适应动态阈值调整机制}{20}{figure.caption.6}%
+\contentsline {subparagraph}{上下文感知的边界验证}{20}{figure.caption.6}%
 \contentsline {subsubsection}{\numberline {2.2.4}结果总结}{20}{subsubsection.2.2.4}%
 \contentsline {subsection}{\numberline {2.3}MPEG 压缩实验}{21}{subsection.2.3}%
 \contentsline {subsubsection}{\numberline {2.3.1}实验要求}{21}{subsubsection.2.3.1}%
@@ -42,4 +42,9 @@
 \contentsline {subparagraph}{算法简介}{23}{lstnumber.5.30}%
 \contentsline {subparagraph}{代码逻辑描述}{24}{lstnumber.5.30}%
 \contentsline {subsubsection}{\numberline {2.3.3}结果分析}{26}{subsubsection.2.3.3}%
-\contentsline {section}{附录}{27}{subsubsection.2.3.3}%
+\contentsline {paragraph}{I帧JPEG压缩结果}{26}{subsubsection.2.3.3}%
+\contentsline {paragraph}{P帧压缩实验结果分析}{28}{figure.caption.9}%
+\contentsline {subsection}{\numberline {2.4}P帧与参考I帧的压缩效率对比}{29}{subsection.2.4}%
+\contentsline {paragraph}{P帧与其他I帧的压缩效率横向对比}{29}{Item.29}%
+\contentsline {paragraph}{实验结论与工程启示}{31}{Item.29}%
+\contentsline {section}{附录}{32}{Item.29}%

@@ -509,3 +509,135 @@ p_compression_ratio = (p_array.nbytes / 1024) / (len(p_compressed_data) / 1024)
 \end{lstlisting}
 
 \subsubsection{结果分析}
+
+\paragraph{I帧JPEG压缩结果}
+
+本次实验针对视频序列中\textbf{首I帧为黑帧}、中I帧及尾I帧开展JPEG标准压缩测试（含RGB-Y分量转换、8×8块DCT量化、游程编码），核心探究黑帧特性对压缩效率的影响，以及常规I帧的压缩规律。实验量化数据汇总于表\ref{tab:i_frame_jpeg_compression}，视觉化效果可参考首I帧压缩结果图（图\ref{fig:i_frame_compression_result}）及中、尾帧并列对比图（图\ref{fig:mid_last_frame_compression_result}），具体分析如下：
+
+\begin{table}[htbp]
+    \centering
+    \caption{I帧JPEG压缩关键指标对比}
+    \label{tab:i_frame_jpeg_compression}
+    % 自适应页面宽度，高度等比例缩放
+    \resizebox{\linewidth}{!}{
+        \begin{tabular}{c r r r r}
+            \toprule[1pt]
+            帧类型 & {原始RGB大小(KB)} & {Y分量均值} & {压缩后大小(KB)} & {压缩率（原始:压缩后）} \\
+            \midrule
+            首I帧 & 2760.00 & -126.22 & 0.43 & 6452.60 \\
+            中I帧 & 2760.00 & -104.19 & 14.48 & 190.64 \\
+            尾I帧 & 2760.00 & -94.34 & 18.80 & 146.84 \\
+            \bottomrule[1pt]
+        \end{tabular}}
+\end{table}
+
+从表\ref{tab:i_frame_jpeg_compression}可知，三帧I帧的原始规格完全统一：分辨率均为640×368像素，原始RGB数据大小均为2760.00 KB。这一设定排除了图像尺寸、原始数据量差异对压缩结果的干扰，确保黑帧与常规I帧的压缩性能对比具备公平性与可比性。
+
+全黑画面的所有像素RGB值趋近于0，转换为Y分量（亮度分量）后呈现“全局一致性”——首帧Y分量均值为-126.22（绝对值远高于中、尾帧），本质是黑帧像素的亮度值高度集中且接近最小值，图像空间冗余度达到理论极值（无任何亮度/纹理差异）。这一特征可从图\ref{fig:i_frame_compression_result}中直观验证：首帧压缩后的视觉效果无任何失真（全黑画面无细节可丢失）。
+
+\begin{itemize}
+    \item \textbf{DCT量化环节}：全黑画面的8×8像素块内所有像素值相同，DCT变换后仅直流分量（DC系数）非零，所有交流分量（AC系数）均为0（实验中首帧前2个8×8块量化结果已验证这一点）；
+    \item \textbf{游程编码环节}：连续的零值AC系数仅需通过少量游程编码符号表征（如实验中前10个游程编码以“(0, 非零DC值)”和块分隔符为主），最终使首帧压缩后数据量仅0.43 KB（表\ref{tab:i_frame_jpeg_compression}），成为典型的“黑帧极致压缩”案例。
+\end{itemize}
+
+中、尾I帧为非黑帧（含正常画面纹理与亮度变化），其压缩表现反映了常规I帧的压缩规律：中帧Y分量均值为-104.19、尾帧为-94.34（表\ref{tab:i_frame_jpeg_compression}），绝对值远低于首黑帧，本质是画面包含亮度渐变、纹理细节（如图\ref{fig:mid_last_frame_compression_result}中中、尾帧可见的场景轮廓/明暗变化），像素值不再统一，空间冗余度显著降低。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/I_frame_first.png}  % 替换为实际图片路径
+    \caption{I帧JPEG首帧压缩结果展示}
+    \label{fig:i_frame_compression_result}  
+\end{figure}
+
+亮度/纹理的复杂性直接导致压缩效率下降：
+\begin{itemize}
+    \item 中帧压缩后数据量增至14.48 KB，压缩率降至190.64:1；
+    \item 尾帧因画面细节进一步增加（亮度层次更丰富），压缩后数据量升至18.80 KB，压缩率仅146.84:1。
+\end{itemize}
+
+从编码环节看，非黑帧的8×8块像素值存在差异，DCT变换后虽仍以DC系数为主，但AC系数的“零值连续性”下降，游程编码需处理更多非零值，最终推高了压缩后数据量。
+
+\begin{figure}[htbp]
+    \centering
+    % 子图1：中间帧
+    \subfigure[I帧JPEG中间帧压缩结果]{
+        \includegraphics[width=0.45\textwidth]{images/I_frame_mid.png}  
+        \label{subfig:mid_frame_compression}
+    }
+    \hfill 
+    \subfigure[I帧JPEG尾帧压缩结果]{
+        \includegraphics[width=0.465\textwidth]{images/I_frame_last.png}  
+        \label{subfig:last_frame_compression}
+    }
+    \caption{I帧JPEG中间帧与尾帧压缩结果展示}
+    \label{fig:mid_last_frame_compression_result}  
+\end{figure}
+
+综上所述，I帧JPEG压缩实验验证了黑帧在压缩效率上的极致优势（压缩率高达6452.60:1），而常规I帧的压缩性能则受画面亮度/纹理复杂性影响显著，压缩率随之下降。该结果为理解不同类型I帧在MPEG压缩中的表现提供了实证依据。
+
+\paragraph{P帧压缩实验结果分析}
+本次实验针对P帧开展基于参考I帧的帧间预测压缩测试，核心对比P帧帧间编码与参考I帧帧内JPEG编码的压缩效率差异，实验视觉效果参考图\ref{fig:p_frame_compression_result}，量化数据汇总于表\ref{tab:i_p_frame_compression}，具体分析如下：
+P帧采用“帧间块匹配+差值编码”的核心逻辑，以中I帧为参考帧，通过8×8块的像素匹配实现冗余剔除，关键特征体现在两方面：
+
+% 导言区需加载：booktabs、siunitx、caption
+\begin{table}[htbp]
+    \centering
+    \caption{I/P帧JPEG/帧间压缩关键指标对比}
+    \label{tab:i_p_frame_compression}
+    \resizebox{\linewidth}{!}{
+        \begin{tabular}{crrrrr}
+            \toprule[1pt]
+            帧类型 & 原始RGB大小(KB) & Y分量均值 & 压缩后大小(KB) & 压缩率（原始:压缩后） \\
+            \midrule
+            首I帧（黑帧） & 2760.00 & -126.22 & 0.43 & 6452.60 \\
+            中I帧（参考帧） & 2760.00 & -104.19 & 14.48 & 190.64 \\
+            尾I帧 & 2760.00 & -94.34 & 18.80 & 146.84 \\
+            P帧 & 2760.00 & -102.59 & 7.35 & 375.58 \\
+            \bottomrule[1pt]
+        \end{tabular}
+    }
+\end{table}
+
+\begin{enumerate}
+    {
+    \item P帧与参考I帧的Y分量均值高度接近（P帧-102.59 vs 参考I帧-104.19，表\ref{tab:i_p_frame_compression}），反映两帧画面亮度分布几乎一致。实验中前2个P帧块的匹配结果验证了这一点：
+    \begin{itemize}
+        \item 块1（位置(0,0)）、块2（位置(0,8)）的最佳匹配位置均为(16, 32)，均方误差（MSE）仅0.03；
+        \item MSE趋近于0说明匹配块与P帧块的像素值几乎无差异，帧间冗余度极高。
+    \end{itemize}
+    \item 因块匹配的高相似度，P帧块与参考帧匹配块的差值矩阵全为0（实验中块1差值矩阵无任何非零元素），这意味着P帧仅需存储“匹配位置信息”，无需额外编码像素差值——这是P帧压缩效率优于参考I帧的核心技术原因。
+    }
+\end{enumerate}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/P_frame_mid.png}  % 替换为实际图片路径
+    \caption{P帧压缩结果展示}
+    \label{fig:p_frame_compression_result}  
+\end{figure}
+
+\subsection{P帧与参考I帧的压缩效率对比}
+从量化数据（表\ref{tab:i_p_frame_compression}）可清晰看出：
+\begin{enumerate}
+    \item 参考I帧（中I帧）采用帧内JPEG压缩后，数据量为14.48 KB，压缩率190.64:1；
+    \item P帧采用帧间预测压缩后，数据量仅7.35 KB（仅包含匹配位置+极少量差值信息），压缩率提升至375.58:1，是参考I帧的1.97倍；
+    \item 视觉层面（图\ref{fig:p_frame_compression_result}），P帧压缩后无任何视觉失真——因差值块全零，解码时可通过参考帧匹配位置完全还原P帧像素。
+\end{enumerate}
+
+\paragraph{P帧与其他I帧的压缩效率横向对比}
+结合全量实验数据（表\ref{tab:i_p_frame_compression}），可进一步明确P帧的压缩特性：
+\begin{itemize}
+    \item P帧压缩率（375.58:1）远高于中I帧（190.64:1）、尾I帧（146.84:1），体现帧间编码对“连续帧低变化场景”的冗余剔除优势；
+    \item 仅低于首I帧（黑帧，6452.60:1）——但首I帧的极致压缩源于“全黑画面的帧内绝对冗余”，属于特殊场景；而P帧的高压缩率是通用帧间编码的工程价值体现，更具普适性。
+\end{itemize}
+
+\paragraph{实验结论与工程启示}
+本次P帧压缩实验验证了“帧间预测编码”对视频连续帧的压缩优势：
+\begin{itemize}
+    \item 技术层面：当P帧与参考I帧的画面相似度高（Y分量均值接近、MSE极低）时，帧间块匹配+差值编码可大幅降低数据量，压缩效率显著优于帧内JPEG编码；
+    \item 工程层面：在视频编码系统中，对“低运动、低亮度变化”的连续帧，优先采用P帧帧间编码（而非全I帧帧内编码），可在保障画质的前提下将压缩率提升约1倍，大幅降低视频存储/传输成本；
+    \item 场景适配：若视频序列存在大量连续相似帧（如监控、静态场景视频），P帧编码的优势会进一步放大，结合首I帧黑帧的极致压缩策略，可实现全序列的高效压缩。
+
+\end{itemize}
+
+综上，表\ref{tab:i_p_frame_compression}的量化数据与图\ref{fig:p_frame_compression_result}的视觉特征相互印证，证明帧间预测编码（P帧）是视频压缩中“平衡效率与画质”的核心技术路径。
